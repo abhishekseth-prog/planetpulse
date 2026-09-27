@@ -75,12 +75,15 @@ All activity routes require a valid bearer token; `user_id` is always derived fr
   "total_activities": 11,
   "reduction": 12.4,
   "reduction_percent": 12.4,
+  "has_previous_month_data": true,
+  "current_month": { "start": "2026-09-01", "through": "2026-09-27", "label": "September 2026", "period": "month_to_date", "total_co2e": 27.2 },
+  "previous_month": { "start": "2026-08-01", "through": "2026-08-31", "label": "August 2026", "total_co2e": 31.1, "has_data": true, "categories": { "travel": 21.0, "electricity": 7.1, "food": 3.0 } },
   "goal": { "target": 100, "current": 27.2, "progress": 27.2, "remaining": 72.8 },
   "goal_progress": { "target_co2e": 100, "used_co2e": 27.2, "progress_percent": 27.2, "remaining_co2e": 72.8 }
 }
 ```
 
-Month-over-month reduction is `(previous month - current month) / previous month * 100`. It is `0` when the previous month has no recorded emissions.
+Month-over-month reduction is `(previous month - current month-to-date) / previous month * 100`. When there is no previous-month emission baseline, `reduction` and `reduction_percent` are `null`; `has_previous_month_data` is false and the UI shows an empty state instead of inventing a comparison. Period boundaries and previous category totals are returned with the response. Every query is scoped to the bearer token's user.
 
 ## Trend
 
@@ -109,4 +112,4 @@ What-if uses the exact same `calculate_carbon` service as activity creation. The
 
 ## AI insights
 
-`GET /api/insights` remains an authenticated endpoint for Person 3's integration. The frontend displays only values returned by this API and a clear unavailable placeholder if it is down.
+`GET /api/insights` returns authenticated, rule-based guidance derived from the account's current-month totals, category emissions, monthly goal, previous-month baseline, recent seven-day trend, and five most recent activities. It returns `observation`, `recommendation`, category totals, goal/trend details, and the recent activity context. It does not return a modeled potential-savings value; numerical savings are only available from the What-if calculation endpoint. Empty accounts receive no category recommendation or actions.

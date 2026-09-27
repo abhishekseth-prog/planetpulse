@@ -21,7 +21,10 @@ The API is available at both `/api/...` (team contract) and root paths (existing
 ## Other product boundaries
 
 - Dashboard figures and trends are aggregated for the current month/date range from persisted activities.
-- Month-over-month reduction is zero when there is no prior-month baseline.
+- Month-over-month change is unavailable when there is no prior-month emission baseline; the API returns `null` and the UI shows an empty comparison state.
+- Monthly comparison labels the current month-to-date total separately from the previous full calendar month and derives all values in the authenticated dashboard query.
+- The Planet Pulse Carbon Score is a product metric, not an official environmental rating: `70% × max(0, 100 − monthly goal usage percent) + 30% × min(100, distinct activity days this month ÷ elapsed days this month × 100)`, rounded to a whole number. It is shown only after an activity has been logged this month.
+- Category comparisons use current-month and previous-calendar-month emissions for the same category. A comparison is omitted when that category has no previous-month emissions.
 - What-if monthly savings multiply the per-day difference by 30.
 - AI insight generation and action-plan logic remain Person 3's responsibility.
 - API errors do not return SQL or database-driver details.

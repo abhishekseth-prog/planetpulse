@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -65,17 +65,27 @@ def get_dashboard(user=Depends(get_current_user)):
         target = float(goal)
         current = float(row["total_co2e"] or 0)
         goal_data = progress(current, target)
-        # Month-to-month reduction is negative when emissions increased.
+        today = date.today()
+        month_start = today.replace(day=1)
+        previous_month_end = month_start - timedelta(days=1)
+        previous_month_start = previous_month_end.replace(day=1)
         cursor.execute(
-            """SELECT COALESCE(SUM(c.co2e), 0) AS total FROM activities a
-               JOIN carbon_records c ON c.activity_id = a.id
-               WHERE a.user_id = %s
-                 AND a.activity_date >= DATE_SUB(DATE_SUB(CURDATE(), INTERVAL (DAYOFMONTH(CURDATE()) - 1) DAY), INTERVAL 1 MONTH)
-                 AND a.activity_date < DATE_SUB(CURDATE(), INTERVAL (DAYOFMONTH(CURDATE()) - 1) DAY)""",
-            (user["id"],),
+            """SELECT COALESCE(SUM(c.co2e), 0) AS total_co2e,
+                      COALESCE(SUM(CASE WHEN a.category='travel' THEN c.co2e ELSE 0 END), 0) AS travel_co2e,
+                      COALESCE(SUM(CASE WHEN a.category='electricity' THEN c.co2e ELSE 0 END), 0) AS electricity_co2e,
+                      COALESCE(SUM(CASE WHEN a.category='food' THEN c.co2e ELSE 0 END), 0) AS food_co2e
+               FROM activities a JOIN carbon_records c ON c.activity_id = a.id
+               WHERE a.user_id = %s AND a.activity_date >= %s AND a.activity_date < %s""",
+            (user["id"], previous_month_start, month_start),
         )
-        previous = float(cursor.fetchone()["total"] or 0)
-        reduction = round((previous - current) / previous * 100, 1) if previous > 0 else 0.0
+        previous_row = cursor.fetchone()
+        previous = float(previous_row["total_co2e"] or 0)
+        previous_categories = {
+            "travel": float(previous_row["travel_co2e"] or 0),
+            "electricity": float(previous_row["electricity_co2e"] or 0),
+            "food": float(previous_row["food_co2e"] or 0),
+        }
+        reduction = round((previous - current) / previous * 100, 1) if previous > 0 else None
         return {
             "total_co2": current, "total_co2e": current,
             "travel": float(row["travel_co2e"] or 0), "travel_co2e": float(row["travel_co2e"] or 0),
@@ -83,6 +93,13 @@ def get_dashboard(user=Depends(get_current_user)):
             "food": float(row["food_co2e"] or 0), "food_co2e": float(row["food_co2e"] or 0),
             "activities": int(row["total_activities"] or 0), "total_activities": int(row["total_activities"] or 0),
             "reduction": reduction, "reduction_percent": reduction,
+            "has_previous_month_data": previous > 0,
+            "current_month": {"start": month_start.isoformat(), "through": today.isoformat(), "label": today.strftime("%B %Y"), "period": "month_to_date", "total_co2e": round(current, 3)},
+            "previous_month": {
+                "start": previous_month_start.isoformat(), "through": previous_month_end.isoformat(),
+                "label": previous_month_start.strftime("%B %Y"), "total_co2e": round(previous, 3),
+                "has_data": previous > 0, "categories": previous_categories,
+            },
             "goal": goal_data, "goal_progress": goal_data,
         }
     except Exception as error:

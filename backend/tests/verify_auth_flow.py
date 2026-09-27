@@ -10,6 +10,7 @@ import json
 import os
 import secrets
 import sys
+from datetime import date, timedelta
 from pathlib import Path
 import urllib.error
 import urllib.request
@@ -120,17 +121,17 @@ def verify():
 
         activity = call("/activities", "POST", {
             "category": "travel", "activity": "car", "amount": 10,
-            "unit": "km", "date": "2026-09-27",
+            "unit": "km", "date": date.today().isoformat(),
         }, token_a, expected=201)
         assert activity["co2e"] == 2.9
         electricity = call("/activities", "POST", {
             "category": "electricity", "activity": "Air conditioner", "amount": 2,
-            "unit": "hours", "date": "2026-09-27",
+            "unit": "hours", "date": date.today().isoformat(),
         }, token_a, expected=201)
         assert electricity["co2e"] == 1.718
         food = call("/activities", "POST", {
             "category": "food", "activity": "Chicken meal", "amount": 1,
-            "unit": "meal", "date": "2026-09-27",
+            "unit": "meal", "date": date.today().isoformat(),
         }, token_a, expected=201)
         assert food["co2e"] == 1.5
         call("/activities", "POST", {"category": "travel", "activity": "car", "amount": 0, "unit": "km"}, token_a, expected=422)
@@ -143,12 +144,23 @@ def verify():
         }, token_a, expected=201)
         assert forged_owner["category"] == "food"
         assert len(call("/activities", token=token_a)) == 4
+        previous_month_day = (date.today().replace(day=1) - timedelta(days=1)).replace(day=15)
+        previous_month_activity = call("/activities", "POST", {
+            "category": "travel", "activity": "car", "amount": 10,
+            "unit": "km", "date": previous_month_day.isoformat(),
+        }, token_a, expected=201)
         assert call("/activities", token=token_b) == []
         dashboard_a = call("/dashboard", token=token_a)
         dashboard_b = call("/dashboard", token=token_b)
         assert dashboard_b["total_activities"] == 0
         assert dashboard_b["travel_co2e"] == dashboard_b["electricity_co2e"] == dashboard_b["food_co2e"] == 0
         assert dashboard_a["total_activities"] == 4
+        assert dashboard_a["has_previous_month_data"] is True
+        assert dashboard_a["previous_month"]["total_co2e"] == 2.9
+        assert dashboard_a["previous_month"]["categories"]["travel"] == 2.9
+        assert dashboard_a["current_month"]["through"] == date.today().isoformat()
+        assert dashboard_b["has_previous_month_data"] is False
+        assert dashboard_b["reduction_percent"] is None
         stored_rows = call("/activities", token=token_a)
         print("Persisted CO2e:", [(row["category"], row["co2e"]) for row in stored_rows])
         by_id = {row["id"]: row["co2e"] for row in stored_rows}
@@ -156,9 +168,12 @@ def verify():
         assert by_id[electricity["id"]] == electricity["co2e"]
         assert by_id[food["id"]] == food["co2e"]
         assert by_id[forged_owner["id"]] == forged_owner["co2e"]
-        assert dashboard_a["travel_co2e"] == sum(row["co2e"] for row in stored_rows if row["category"] == "travel"), dashboard_a
-        assert dashboard_a["electricity_co2e"] == sum(row["co2e"] for row in stored_rows if row["category"] == "electricity"), dashboard_a
-        assert dashboard_a["food_co2e"] == sum(row["co2e"] for row in stored_rows if row["category"] == "food"), dashboard_a
+        assert by_id[previous_month_activity["id"]] == previous_month_activity["co2e"]
+        current_month_key = date.today().strftime("%Y-%m")
+        current_rows = [row for row in stored_rows if row["activity_date"].startswith(current_month_key)]
+        assert dashboard_a["travel_co2e"] == sum(row["co2e"] for row in current_rows if row["category"] == "travel"), dashboard_a
+        assert dashboard_a["electricity_co2e"] == sum(row["co2e"] for row in current_rows if row["category"] == "electricity"), dashboard_a
+        assert dashboard_a["food_co2e"] == sum(row["co2e"] for row in current_rows if row["category"] == "food"), dashboard_a
         trend = call("/trend?period=7d", token=token_a)
         assert len(trend) == 7 and any(point["co2e"] > 0 for point in trend)
         assert any(point["co2e"] == 0 for point in trend)
@@ -171,13 +186,42 @@ def verify():
             "current_activity": "Car", "alternative_activity": "Metro", "distance": 20,
         }, token_a)
         assert what_if["daily_reduction"] == round(what_if["current_co2"] - what_if["new_co2"], 3)
+        call("/what-if", "POST", {
+            "category": "travel",
+            "current": {"activity": "Car", "amount": 20, "unit": "km"},
+            "alternative": {"activity": "Beef meal", "amount": 20, "unit": "km"},
+        }, token_a, expected=422)
+        call("/what-if", "POST", {
+            "category": "travel",
+            "current": {"activity": "Car", "amount": -1, "unit": "km"},
+            "alternative": {"activity": "Metro", "amount": 20, "unit": "km"},
+        }, token_a, expected=422)
         insights_a = call("/insights", token=token_a)
         insights_b = call("/insights", token=token_b)
         assert insights_a["period"] == "current_month" and insights_a["method"] == "rule_based"
+        assert insights_a["observation"] == "Travel is currently your largest emission category."
         assert insights_a["contribution_percent"] > 0
+        assert insights_a["potential_impact_kg"] is None
+        assert len(insights_a["recent_activities"]) == 5
+        assert insights_a["monthly_goal"]["target"] == 321
         assert insights_b["contribution_percent"] == 0
-        assert "Start logging activities" in insights_b["opportunity"]
-        print("PASS what-if uses returned engine values and personalized insights are authenticated")
+        assert insights_b["has_activities"] is False and insights_b["actions"] == []
+        assert insights_b["largest_contributor"] is None
+        assert "Start tracking your activities" in insights_b["opportunity"]
+        electricity_update = call("/activities", "POST", {
+            "category": "electricity", "activity": "Air conditioner", "amount": 20,
+            "unit": "hours", "date": date.today().isoformat(),
+        }, token_a, expected=201)
+        assert call("/insights", token=token_a)["largest_contributor"] == "Electricity"
+        food_update = call("/activities", "POST", {
+            "category": "food", "activity": "Beef meal", "amount": 10,
+            "unit": "meal", "date": date.today().isoformat(),
+        }, token_a, expected=201)
+        food_insights = call("/insights", token=token_a)
+        assert food_insights["largest_contributor"] == "Food"
+        assert food_insights["category_totals"]["food"] >= food_update["co2e"]
+        assert call("/insights", token=token_b)["has_activities"] is False
+        print("PASS What-If uses shared engine values, rejects invalid comparisons, and insights are authenticated")
 
         login = call("/auth/login", "POST", {"email": email_a, "password": password})
         assert call("/auth/me", token=login["access_token"])["id"] == user_a["id"]
