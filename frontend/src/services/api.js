@@ -13,7 +13,11 @@ async function request(path, options) {
   try {
     response = await fetch(`${API_URL}${path}`, { ...options, headers, signal: controller.signal });
   } catch (error) {
-    if (error.name === "AbortError") throw new Error("The request timed out. Please try again.");
+    if (error.name === "AbortError") {
+      console.error(`[PlanetPulse Timeout] ${path} request timed out`);
+      throw new Error("The request timed out. Please try again.");
+    }
+    console.error(`[PlanetPulse Network Error] ${path}`, error);
     throw new Error("Unable to reach PlanetPulse. Check your connection and try again.");
   } finally {
     window.clearTimeout(timeout);
@@ -21,17 +25,19 @@ async function request(path, options) {
   const result = await response.json().catch(() => ({}));
   if (!response.ok) {
     if (response.status === 401 && !path.startsWith("/auth/")) window.dispatchEvent(new Event("planetpulse:unauthorized"));
+    console.error(`[PlanetPulse API ${response.status}] ${path}:`, result);
     const detail = result.detail ?? result.message;
-    const message = response.status >= 500
-      ? "PlanetPulse could not complete the request. Please try again."
-      : typeof detail === "string"
-        ? detail
-        : Array.isArray(detail)
-          ? detail.map((item) => item.msg).filter(Boolean).join(" ")
+    const message = typeof detail === "string" && detail.trim()
+      ? detail
+      : Array.isArray(detail)
+        ? detail.map((item) => item.msg).filter(Boolean).join(" ")
+        : response.status >= 500
+          ? "PlanetPulse service is temporarily unavailable. Please try again."
           : `Request failed (${response.status})`;
     throw new Error(message);
   }
   return result;
+
 }
 
 export const api = {
