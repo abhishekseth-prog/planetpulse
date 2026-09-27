@@ -29,7 +29,7 @@ app = FastAPI(
 
 # Parse configured CORS origins
 configured_origins = [
-    origin.strip()
+    origin.strip().rstrip("/")
     for origin in CORS_ORIGINS.split(",")
     if origin.strip()
 ]
@@ -44,10 +44,12 @@ if not configured_origins:
 app.add_middleware(
     CORSMiddleware,
     allow_origins=configured_origins,
+    allow_origin_regex=r"^https:\/\/.*\.vercel\.app$",
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
+
 
 
 @app.get("/")

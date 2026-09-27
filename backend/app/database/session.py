@@ -1,14 +1,43 @@
 import os
-from sqlalchemy import create_engine, text
+from pathlib import Path
+from sqlalchemy import create_engine, text, event
 from sqlalchemy.orm import declarative_base, sessionmaker
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./planetpulse.db")
+# Configurable database path: anchors to backend/planetpulse.db portably across environments
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+DEFAULT_DB_FILE = BASE_DIR / "planetpulse.db"
+DEFAULT_DB_URL = f"sqlite:///{DEFAULT_DB_FILE.as_posix()}"
 
-# For SQLite, check_same_thread is set to False to permit FastAPI multi-threaded request workers
+DATABASE_URL = os.getenv("DATABASE_URL", DEFAULT_DB_URL)
+if DATABASE_URL in ("sqlite:///./planetpulse.db", "sqlite:///planetpulse.db"):
+    DATABASE_URL = DEFAULT_DB_URL
+
+# For SQLite, check_same_thread is set to False to permit FastAPI multi-threaded request workers,
+# and timeout is set to 20 seconds to prevent database locking timeouts under concurrent requests.
+connect_args = (
+    {"check_same_thread": False, "timeout": 20}
+    if DATABASE_URL.startswith("sqlite")
+    else {}
+)
+
 engine = create_engine(
     DATABASE_URL,
-    connect_args={"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {},
+    connect_args=connect_args,
 )
+
+if DATABASE_URL.startswith("sqlite"):
+    @event.listens_for(engine, "connect")
+    def set_sqlite_pragma(dbapi_connection, connection_record):
+        cursor = dbapi_connection.cursor()
+        try:
+            cursor.execute("PRAGMA busy_timeout = 20000;")
+            cursor.execute("PRAGMA journal_mode = WAL;")
+            cursor.execute("PRAGMA synchronous = NORMAL;")
+        except Exception:
+            pass
+        finally:
+            cursor.close()
+
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
