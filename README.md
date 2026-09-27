@@ -410,10 +410,6 @@ to help users understand how their daily choices affect their estimated carbon f
 
 **Ayush Gupta**
 
-B.Tech Computer Science Engineering
-Nitra Technical Campus, Ghaziabad
-AKTU
-
 **Focus:** Data Analytics, Python, SQL, Power BI & Software Development
 
 ---
