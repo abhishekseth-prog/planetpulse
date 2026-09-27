@@ -1,30 +1,123 @@
-# PlanetPulse — decisions and assumptions
+# PlanetPulse — Decision Points
 
-## Decision 1 — Keep one emission calculation engine
+PlanetPulse is a personal carbon-footprint tracking application that helps users understand the impact of their everyday choices and identify practical ways to reduce their footprint.
 
-Activity creation and What-if scenarios both call `backend/services/calculator.py`. Factors live centrally in `backend/carbon/factors.py` and can be overridden using `PLANETPULSE_FACTOR_*` environment variables. This keeps the scenario comparison consistent with recorded activities and avoids carbon formulas in route handlers.
+This document explains three important product and engineering decisions made while building PlanetPulse.
 
-## Decision 2 — Treat emission values as transparent screening estimates
+---
 
-The factors are estimates for a hackathon prototype; they are not a personal carbon audit. Electricity defaults to 0.716 kg CO2 per kWh, based on the Central Electricity Authority's Indian power-sector weighted-average grid factor reported in its Version 19 database for FY 2022–23. This is a dated national average and should be updated to the latest CEA dataset before public/production use. CEA's current baseline database landing page publishes newer versions: https://cea.nic.in/cdm-co2-baseline-database/?lang=en Appliance-hour inputs are converted with explicit typical draw assumptions (AC 1.2 kWh/hour, lighting 0.08, refrigerator 0.12, other appliance 0.5); users with measured kWh should submit kWh directly.
+## Decision Point 1 — Deterministic Carbon Calculation
 
-Travel defaults (car 0.29, metro 0.105, bus 0.10 kg CO2e per km) are prototype per-passenger estimates calibrated to the supplied What-if example (20 km car = 5.8 kg and metro = 2.1 kg). They are intentionally explicit/configurable, not claimed as an official India fleet average. Government conversion-factor datasets such as UK DESNZ's annual GHG factors publish mode-specific passenger-km references, but factors depend on geography, occupancy, fleet, and boundary: https://www.gov.uk/government/publications/greenhouse-gas-reporting-conversion-factors-2026
+### Decision
 
-Meal defaults (plant-based 0.5, chicken 1.5, dairy 1.2, beef 5.0 kg CO2e per meal) are serving-level prototype assumptions, not direct values from a single global meal database. Their relative ordering follows global food life-cycle evidence. Our World in Data documents that its food-impact data is based on Poore & Nemecek's meta-analysis of 38,700 farms and 40 products and reports per-product footprints, not standardized prepared meals: https://ourworldindata.org/environmental-impacts-of-food
+We chose a deterministic carbon-calculation system based on predefined emission factors rather than generating carbon estimates dynamically.
 
-Bike and walking are assigned zero direct activity emissions in this prototype; lifecycle impacts of vehicles, food consumed, and infrastructure are outside this simplified boundary.
+### Why
 
-## Decision 3 — Preserve the team's API contract and existing database
+Carbon calculations need to be predictable and reproducible. If a user logs the same activity twice with the same inputs, the estimated carbon footprint should remain consistent.
 
-The API is available at both `/api/...` (team contract) and root paths (existing frontend compatibility). Activity requests accept both canonical (`activity`, `amount`, `date`) and previously integrated frontend (`activity_type`, `value`, `activity_date`) names. Existing MySQL `activities` and `carbon_records` tables remain the activity store; `users` and `user_goals` tables are added when needed. Registration/login use scrypt password hashes and signed JWT bearer tokens. Private API handlers derive the user ID from the validated token so activities, goals, dashboard totals, trends, and insights are scoped to that account. Legacy users migrated from existing rows receive disabled local-only accounts rather than having their history reassigned. The additive migration widens old two-decimal activity and carbon columns to three decimals without dropping rows.
+A deterministic calculation engine also makes the results easier to test, explain, and connect with other parts of the product.
 
-## Other product boundaries
+### What we considered
 
-- Dashboard figures and trends are aggregated for the current month/date range from persisted activities.
-- Month-over-month change is unavailable when there is no prior-month emission baseline; the API returns `null` and the UI shows an empty comparison state.
-- Monthly comparison labels the current month-to-date total separately from the previous full calendar month and derives all values in the authenticated dashboard query.
-- The Planet Pulse Carbon Score is a product metric, not an official environmental rating: `70% × max(0, 100 − monthly goal usage percent) + 30% × min(100, distinct activity days this month ÷ elapsed days this month × 100)`, rounded to a whole number. It is shown only after an activity has been logged this month.
-- Category comparisons use current-month and previous-calendar-month emissions for the same category. A comparison is omitted when that category has no previous-month emissions.
-- What-if monthly savings multiply the per-day difference by 30.
-- AI insight generation and action-plan logic remain Person 3's responsibility.
-- API errors do not return SQL or database-driver details.
+**Option 1 — Dynamic or AI-generated estimates**
+
+This could provide flexible estimates, but the same activity could potentially produce different results and would be harder to validate consistently.
+
+**Option 2 — Predefined emission factors**
+
+This provides predictable calculations and allows the same calculation logic to be reused throughout the application.
+
+### Outcome
+
+We implemented a deterministic carbon-calculation engine using predefined emission factors.
+
+The same calculation logic is used when activities are logged and when users compare choices in the What-if Impact Simulator.
+
+This keeps the carbon calculations consistent across PlanetPulse.
+
+---
+
+## Decision Point 2 — Connecting the What-if Simulator to User Activities
+
+### Decision
+
+We chose to connect the What-if Impact Simulator with the user's actual activity data instead of relying only on predefined example scenarios.
+
+### Why
+
+A generic simulator can show the difference between two choices, but it does not necessarily reflect the choices a particular user is making.
+
+By connecting the simulator to the user's logged activities, PlanetPulse can help users understand the potential impact of changing one of their actual choices.
+
+For example, a user who regularly logs car travel can compare that activity with an alternative transportation choice.
+
+### What we considered
+
+**Option 1 — Generic scenarios**
+
+Predefined scenarios would be simpler to implement, but the results would be less connected to the user's personal footprint.
+
+**Option 2 — User-linked scenarios**
+
+Using the user's existing activity data makes the simulation more relevant and connects the simulator with the rest of the application.
+
+### Outcome
+
+The What-if Simulator uses the user's activity information to compare a current choice with an alternative.
+
+It calculates:
+
+- Current carbon impact
+- Alternative carbon impact
+- Carbon saved
+- Percentage reduction
+- Estimated monthly impact
+
+This allows users to understand the potential effect of changing a real behavior rather than only viewing a generic example.
+
+---
+
+## Decision Point 3 — Rule-Based Carbon Coach
+
+### Decision
+
+We chose a rule-based Carbon Coach that generates recommendations using the user's actual carbon-footprint data.
+
+### Why
+
+The main purpose of the Carbon Coach is to turn carbon data into practical actions.
+
+Instead of providing generic environmental advice, the Carbon Coach looks at the user's carbon contributors and identifies areas where a change could have a meaningful impact.
+
+A rule-based approach also keeps the recommendations predictable, explainable, and independent of external AI services.
+
+### What we considered
+
+**Option 1 — Generic recommendations**
+
+Generic recommendations would be easier to implement, but they would not be strongly connected to the user's actual footprint.
+
+**Option 2 — Rule-based recommendations based on user data**
+
+This allows recommendations to be generated from the user's actual carbon contribution while keeping the logic predictable and understandable.
+
+### Outcome
+
+The Carbon Coach identifies the user's largest carbon contributor and provides relevant actions based on that information.
+
+The recommendations are connected to the user's logged activities and carbon calculations.
+
+This makes the Carbon Coach part of the product's decision-support flow rather than a separate generic information section.
+
+---
+
+## Summary
+
+The three decisions were made to keep PlanetPulse:
+
+1. **Consistent** — carbon calculations produce predictable results.
+2. **Personalized** — the What-if Simulator works with the user's actual activity data.
+3. **Actionable** — the Carbon Coach turns the user's footprint data into practical recommendations.
+
+These choices were made to ensure that the five core product features work together as one end-to-end carbon-tracking experience.
