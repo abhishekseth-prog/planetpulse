@@ -141,3 +141,21 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# Python environments, bytecode, and test artifacts
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local databases and machine-specific logs
+*.sqlite
+*.sqlite3
+*.db
+.DS_Store
+
+# Obsolete local backup entry point; the authenticated API is backend/main.py
+/backend/main_backup.py

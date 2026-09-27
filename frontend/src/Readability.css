@@ -1,0 +1,268 @@
+/* Readability pass: preserve the existing dashboard layout and visual theme. */
+.welcome-row h1,
+.page-title-row h1 {
+  font-size: clamp(28px, 2.4vw, 36px);
+  line-height: 1.16;
+}
+
+.welcome-row p,
+.page-title-row p {
+  font-size: clamp(13px, 1vw, 15px);
+  line-height: 1.55;
+}
+
+.panel-heading h2,
+.settings-card-head h2 {
+  font-size: clamp(20px, 1.55vw, 24px);
+  line-height: 1.25;
+}
+
+.panel-eyebrow,
+.sidebar-caption {
+  font-size: 11px;
+  letter-spacing: 1px;
+}
+
+.side-link {
+  font-size: 14px;
+}
+
+.dashboard-link {
+  font-size: 15px;
+}
+
+.stat-card {
+  min-height: 116px;
+  height: auto;
+}
+
+.stat-number,
+.four-stats .stat-number {
+  font-size: clamp(32px, 2.5vw, 40px);
+  line-height: 1.1;
+  letter-spacing: -0.7px;
+}
+
+.four-stats .compact-number,
+.stat-number.compact-number {
+  font-size: clamp(20px, 1.6vw, 27px);
+}
+
+.stat-head,
+.four-stats .stat-head {
+  font-size: clamp(12px, 0.9vw, 14px);
+  letter-spacing: 0.4px;
+}
+
+.stat-foot,
+.four-stats .stat-foot,
+.stat-card small {
+  font-size: 12px;
+}
+
+.category-title strong,
+.category-title span,
+.category-percent,
+.top-category-row strong,
+.top-category-row span,
+.top-category-row b {
+  font-size: clamp(13px, 0.95vw, 15px);
+}
+
+.overview-middle .goal-number-row strong,
+.goal-number-row strong {
+  font-size: clamp(23px, 1.9vw, 30px);
+  line-height: 1.25;
+}
+
+.goal-number-row strong span {
+  font-size: 0.8em;
+}
+
+.goal-percent {
+  font-size: clamp(20px, 1.6vw, 25px);
+}
+
+.overview-middle .goal-remaining,
+.goal-remaining {
+  font-size: 13px;
+}
+
+.trend-controls button {
+  font-size: 12px;
+  padding: 6px 8px;
+}
+
+.chart-legend,
+.chart-x,
+.chart-y,
+.trend-day-row,
+.trend-day-row strong {
+  font-size: 13px;
+}
+
+.recent-row {
+  min-height: 46px;
+}
+
+.recent-name strong,
+.recent-carbon,
+.overview-bottom .recent-name strong,
+.overview-bottom .recent-carbon {
+  font-size: 14px;
+}
+
+.recent-name small,
+.recent-amount,
+.recent-carbon small,
+.overview-bottom .recent-name small,
+.overview-bottom .recent-amount {
+  font-size: 12px;
+}
+
+.text-button,
+.primary-button,
+.outline-button,
+.simulate-button,
+.plan-button,
+.add-main,
+.update-goal {
+  font-size: 14px;
+}
+
+.sim-intro,
+.sim-choice label,
+.sim-choice strong,
+.sim-result-top small,
+.saving-callout small,
+.coach-panel p,
+.coach-action,
+.no-activities,
+.data-state {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.api-footnote,
+.mock-caption,
+.trend-note {
+  font-size: 12px;
+}
+
+@media (max-width: 1050px) {
+  .stat-card {
+    min-height: 112px;
+  }
+
+  .stat-number,
+  .four-stats .stat-number {
+    font-size: clamp(30px, 3.2vw, 36px);
+  }
+
+  .four-stats .compact-number,
+  .stat-number.compact-number {
+    font-size: clamp(20px, 2.2vw, 25px);
+  }
+}
+
+@media (max-width: 760px) {
+  .welcome-row h1,
+  .page-title-row h1 {
+    font-size: clamp(27px, 4vw, 32px);
+  }
+
+  .welcome-row p,
+  .page-title-row p {
+    font-size: 14px;
+  }
+
+  .side-link,
+  .dashboard-link {
+    font-size: 0;
+  }
+
+  .stat-card,
+  .four-stats .stat-card {
+    min-height: 104px;
+    height: auto;
+  }
+
+  .stat-number,
+  .four-stats .stat-number {
+    font-size: clamp(26px, 4vw, 34px);
+  }
+
+  .four-stats .compact-number,
+  .stat-number.compact-number {
+    font-size: clamp(20px, 3vw, 25px);
+  }
+
+  .overview-middle .goal-number-row strong,
+  .goal-number-row strong {
+    font-size: clamp(23px, 3.5vw, 28px);
+  }
+}
+
+@media (max-width: 510px) {
+  .welcome-row h1 {
+    font-size: 28px;
+  }
+
+  .welcome-row p {
+    font-size: 14px;
+    max-width: 100%;
+  }
+
+  .panel-heading h2,
+  .settings-card-head h2 {
+    font-size: 20px;
+  }
+
+  .stat-card,
+  .four-stats .stat-card {
+    min-height: 104px;
+    padding: 11px;
+  }
+
+  .stat-number,
+  .four-stats .stat-number {
+    font-size: 27px;
+  }
+
+  .four-stats .compact-number,
+  .stat-number.compact-number {
+    font-size: 20px;
+  }
+
+  .stat-head {
+    font-size: 12px;
+  }
+
+  .stat-foot,
+  .category-title strong,
+  .category-title span,
+  .category-percent,
+  .recent-name strong,
+  .recent-carbon {
+    font-size: 13px;
+  }
+
+  .recent-row {
+    min-height: 52px;
+  }
+
+  .chart-x,
+  .chart-y {
+    font-size: 12px;
+  }
+
+  .text-button,
+  .primary-button,
+  .outline-button,
+  .simulate-button,
+  .plan-button,
+  .add-main,
+  .update-goal {
+    font-size: 14px;
+  }
+}
