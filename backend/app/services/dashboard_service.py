@@ -83,25 +83,54 @@ def get_dashboard_summary(
     travel_val = category_map["travel"].co2e
     elec_val = category_map["electricity"].co2e
     food_val = category_map["food"].co2e
+    category_totals = {
+        "travel": travel_val,
+        "electricity": elec_val,
+        "food": food_val,
+    }
 
-    # 3. Calculate month-over-month reduction if no explicit date filters
+    # 3. Calculate month-over-month reduction and previous month breakdown
     today = dt.date.today()
     reduction = 0.0
+    first_current = dt.date(today.year, today.month, 1)
+    first_prev = (first_current - dt.timedelta(days=1)).replace(day=1)
+    last_prev = first_current - dt.timedelta(days=1)
+
+    prev_categories = {"travel": 0.0, "electricity": 0.0, "food": 0.0}
+    prev_total = 0.0
+
     if start_date is None and end_date is None:
-        # Current month
-        first_current = dt.date(today.year, today.month, 1)
-        # Previous month
-        first_prev = (first_current - dt.timedelta(days=1)).replace(day=1)
-        last_prev = first_current - dt.timedelta(days=1)
-        
-        prev_q = db.query(func.coalesce(func.sum(Activity.co2e), 0.0)).filter(
-            Activity.date >= first_prev, Activity.date <= last_prev
-        )
+        prev_cat_q = db.query(
+            Activity.category,
+            func.coalesce(func.sum(Activity.co2e), 0.0).label("cat_co2")
+        ).filter(Activity.date >= first_prev, Activity.date <= last_prev)
         if user_id is not None:
-            prev_q = prev_q.filter(Activity.user_id == user_id)
-        prev_total = float(prev_q.scalar())
+            prev_cat_q = prev_cat_q.filter(Activity.user_id == user_id)
+        for row in prev_cat_q.group_by(Activity.category).all():
+            c_name = str(row.category).strip().lower()
+            if c_name in prev_categories:
+                prev_categories[c_name] = round(float(row.cat_co2), 4)
+
+        prev_total = round(sum(prev_categories.values()), 4)
         if prev_total > 0:
             reduction = round((prev_total - total_co2) / prev_total * 100.0, 1)
+
+    current_month = {
+        "start": first_current.isoformat(),
+        "through": today.isoformat(),
+        "label": today.strftime("%B %Y"),
+        "period": "month_to_date",
+        "total_co2e": round(total_co2, 3),
+    }
+
+    previous_month = {
+        "start": first_prev.isoformat(),
+        "through": last_prev.isoformat(),
+        "label": first_prev.strftime("%B %Y"),
+        "total_co2e": round(prev_total, 3),
+        "has_data": prev_total > 0,
+        "categories": prev_categories,
+    }
 
     # 4. Fetch goal progress
     goal_data = get_monthly_goal_progress(db=db, user_id=user_id)
@@ -120,6 +149,10 @@ def get_dashboard_summary(
         food_co2e=food_val,
         reduction=reduction,
         reduction_percent=reduction,
+        category_totals=category_totals,
+        has_previous_month_data=prev_total > 0,
+        current_month=current_month,
+        previous_month=previous_month,
         goal=goal_dict,
         goal_progress=goal_dict,
         categories=DashboardCategories(

@@ -36,6 +36,10 @@ class DashboardResponse(BaseModel):
     food_co2e: Optional[float] = Field(None, description="Food emissions alias")
     reduction: Optional[float] = Field(0.0, description="Month-over-month reduction percentage")
     reduction_percent: Optional[float] = Field(0.0, description="Reduction percentage alias")
+    category_totals: Optional[dict] = Field(default_factory=dict, description="Category emissions mapping")
+    has_previous_month_data: bool = Field(False, description="Whether previous month data exists")
+    current_month: Optional[dict] = Field(None, description="Current month summary")
+    previous_month: Optional[dict] = Field(None, description="Previous month summary")
     goal: Optional[Any] = Field(None, description="Goal progress summary")
     goal_progress: Optional[Any] = Field(None, description="Goal progress alias")
 
