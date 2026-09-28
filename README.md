@@ -1,102 +1,101 @@
-# 🌍 PlanetPulse
+# PlanetPulse — Personal Carbon Intelligence Platform
 
-**Personal Carbon Footprint & Impact Decision Platform**
+**PlanetPulse** is a full-stack environmental impact tracking platform that helps users understand and monitor the carbon footprint associated with their everyday activities, including **travel, food, and electricity consumption**.
 
-PlanetPulse is a web-based platform that helps users understand and track the carbon impact of their everyday activities such as **travel, food, and electricity**.
+The platform combines activity tracking, carbon-emission calculations, analytics, goal management, and what-if analysis into a single dashboard to help users better understand their environmental impact.
 
-The platform converts activity data into estimated **CO₂e emissions**, provides dashboards and trends, supports monthly carbon goals, and allows users to explore the potential impact of changing their daily choices.
+## 🌐 Live Application
+
+* **Frontend:** https://planetpulse-2cq5.vercel.app/
+* **Backend API:** https://planetpulse-0adp.onrender.com/
+* **API Documentation:** https://planetpulse-0adp.onrender.com/docs
 
 ---
 
 ## 🚀 Key Features
 
-### 🔐 User Authentication
+### 🔐 Authentication & User Management
 
 * User registration and login
-* Secure password hashing
 * JWT-based authentication
-* Protected user-specific APIs
-* `/auth/me` endpoint for authenticated user information
+* Protected API routes
+* User-specific activity and analytics data
 
-### 🌱 Carbon Footprint Tracking
+### 📊 Carbon Impact Dashboard
 
-Users can record activities across multiple categories:
+* Overview of personal carbon emissions
+* Activity-based impact breakdown
+* Key environmental performance indicators
+* Historical impact visualization
 
-* 🚗 Travel
-* 🍽️ Food
-* ⚡ Electricity
+### 🌱 Activity Tracking
 
-Each activity is processed through a centralized carbon calculation engine to estimate its CO₂e impact.
+Users can record daily activities across major emission categories:
 
-### 📊 Dashboard
+* 🚗 **Travel**
+* 🍽️ **Food**
+* ⚡ **Electricity**
 
-The dashboard provides:
+Each activity is processed through the carbon calculation engine to estimate its associated emissions.
 
-* Total carbon emissions
-* Category-wise emissions
-* Monthly comparison
-* Reduction percentage
-* Monthly goal progress
-* Activity-based insights
+### 📈 Analytics & Trends
 
-### 📈 Emission Trends
+* Daily and monthly emission trends
+* Category-wise impact analysis
+* Historical activity insights
+* Data-driven visualizations for understanding emission patterns
 
-Users can analyze their emissions over different periods:
+### 🎯 Monthly Goals
 
-* Last 7 days
-* Last 30 days
-* Last 3 months
-* Custom date ranges
+* Set personal carbon-reduction goals
+* Track progress toward monthly targets
+* Monitor current performance against goals
 
-The trend API also provides zero-filled dates where no activity was recorded, making the frontend charts consistent.
+### 🔄 Impact Simulator
 
-### 🎯 Monthly Carbon Goals
+The **What-If / Impact Simulator** allows users to explore hypothetical changes in their activities and understand how those changes could affect their estimated carbon footprint.
 
-Users can:
+### 💡 Carbon Coach
 
-* Set a monthly CO₂e target
-* View their current goal
-* Track progress toward the target
+Provides practical insights based on tracked activities to help users identify areas where their environmental impact can potentially be reduced.
 
-### 🔄 What-If Analysis
+### 📱 Responsive Interface
 
-PlanetPulse allows users to explore hypothetical changes to their activities and see the estimated difference in CO₂e emissions.
-
-### 💡 Smart Insights
-
-The platform generates deterministic, rule-based insights based on the user's activity and emission patterns.
-
-### 🗄️ Database
-
-The backend uses:
-
-* SQLite
-* SQLAlchemy 2.0
-* User-scoped data models
-* Database migrations with Alembic
+* Modern React-based interface
+* Responsive dashboard
+* Component-based frontend architecture
+* REST API integration with the backend
 
 ---
 
 ## 🏗️ System Architecture
 
 ```text
-                    PLANETPULSE
-                        │
-          ┌─────────────┴─────────────┐
-          │                           │
-      Frontend                    Backend
-          │                           │
-     React / Vite                FastAPI
-          │                           │
-       Axios                 Service Layer
-          │                           │
-          └──────────────┬────────────┘
-                         │
-                  Carbon Engine
-                         │
-                    SQLAlchemy
-                         │
-                      SQLite
+┌──────────────────────────────┐
+│        React + Vite          │
+│          Frontend            │
+│           Vercel             │
+└──────────────┬───────────────┘
+               │
+               │ REST API
+               ▼
+┌──────────────────────────────┐
+│        FastAPI Backend       │
+│           Render             │
+│                              │
+│ Authentication               │
+│ Activity Management          │
+│ Carbon Calculations          │
+│ Analytics & Trends           │
+│ Goals & What-If Analysis     │
+└──────────────┬───────────────┘
+               │
+               │ SQLAlchemy
+               ▼
+┌──────────────────────────────┐
+│      PostgreSQL Database     │
+│           Render             │
+└──────────────────────────────┘
 ```
 
 ---
@@ -105,88 +104,110 @@ The backend uses:
 
 ### Frontend
 
-* React
+* React.js
 * Vite
 * JavaScript
-* Axios
-* CSS
+* HTML5
+* CSS3
+* REST API integration
+* Vercel
 
 ### Backend
 
 * Python
 * FastAPI
-* SQLAlchemy 2.0
-* Pydantic
+* SQLAlchemy
+* Uvicorn
 * JWT Authentication
-* Alembic
+* RESTful APIs
+* Render
 
 ### Database
 
-* SQLite
+* PostgreSQL
+* SQLAlchemy ORM
 
-### Development & Testing
+### Deployment
 
-* Git
-* GitHub
-* Pytest
-* FastAPI Swagger / OpenAPI
+* **Frontend:** Vercel
+* **Backend:** Render
+* **Database:** Render PostgreSQL
 
 ---
 
-## 📂 Project Structure
+## 🔄 Core User Flow
 
 ```text
-planetpulse/
-│
-├── backend/
-│   ├── app/
-│   │   ├── carbon/
-│   │   │   └── calculator.py
-│   │   │
-│   │   ├── models/
-│   │   │   ├── user.py
-│   │   │   ├── goal.py
-│   │   │   └── activity.py
-│   │   │
-│   │   ├── schemas/
-│   │   │   ├── auth.py
-│   │   │   ├── activity.py
-│   │   │   ├── goal.py
-│   │   │   ├── trend.py
-│   │   │   └── ...
-│   │   │
-│   │   ├── services/
-│   │   │   ├── auth_service.py
-│   │   │   ├── activity_service.py
-│   │   │   ├── goal_service.py
-│   │   │   ├── trend_service.py
-│   │   │   ├── what_if_service.py
-│   │   │   └── insights_service.py
-│   │   │
-│   │   ├── routes/
-│   │   │   ├── auth.py
-│   │   │   ├── activities.py
-│   │   │   ├── dashboard.py
-│   │   │   ├── trend.py
-│   │   │   ├── goal.py
-│   │   │   ├── what_if.py
-│   │   │   └── insights.py
-│   │   │
-│   │   └── main.py
-│   │
-│   ├── alembic/
-│   ├── tests/
-│   ├── requirements.txt
-│   ├── alembic.ini
-│   ├── API.md
-│   └── DECISIONS.md
-│
-└── frontend/
+User Registration / Login
+          ↓
+     User Dashboard
+          ↓
+   Record Daily Activity
+          ↓
+ Carbon Calculation Engine
+          ↓
+   Store Activity Data
+          ↓
+ Analytics & Trend Processing
+          ↓
+ Dashboard Insights
+          ↓
+ Goals / Carbon Coach / What-If Analysis
 ```
 
 ---
 
-## ⚙️ Getting Started
+## 🧮 Carbon Calculation Engine
+
+PlanetPulse processes user activity data and converts it into estimated carbon emissions using activity-specific calculation logic.
+
+The calculation pipeline follows the general flow:
+
+```text
+Activity Input
+      ↓
+Activity Validation
+      ↓
+Category-Specific Calculation
+      ↓
+Emission Estimate
+      ↓
+Database Storage
+      ↓
+Analytics & Visualization
+```
+
+The calculation layer is designed to keep emission logic separate from the API and presentation layers, making the backend easier to maintain and extend.
+
+---
+
+## 📁 Project Structure
+
+```text
+planetpulse/
+│
+├── frontend/
+│   ├── src/
+│   ├── public/
+│   ├── package.json
+│   └── vite.config.js
+│
+├── backend/
+│   ├── app/
+│   │   ├── models/
+│   │   ├── schemas/
+│   │   ├── routes/
+│   │   ├── services/
+│   │   └── ...
+│   ├── requirements.txt
+│   └── ...
+│
+└── README.md
+```
+
+---
+
+## ⚙️ Local Development
 
 ### 1. Clone the Repository
 
@@ -195,28 +216,20 @@ git clone <YOUR_REPOSITORY_URL>
 cd planetpulse
 ```
 
-### 2. Switch to the Development Branch
-
-```bash
-git checkout Ayush_planet_pulse
-```
-
-### 3. Setup Backend
+### 2. Backend Setup
 
 ```bash
 cd backend
+
+python -m venv venv
 ```
 
-Create a virtual environment:
+Activate the virtual environment:
+
+**Windows**
 
 ```bash
-python -m venv .venv
-```
-
-Activate it on Windows:
-
-```bash
-.venv\Scripts\activate
+venv\Scripts\activate
 ```
 
 Install dependencies:
@@ -225,195 +238,113 @@ Install dependencies:
 pip install -r requirements.txt
 ```
 
-### 4. Run the Backend
+Create a `.env` file:
+
+```env
+DATABASE_URL=postgresql://USERNAME:PASSWORD@HOST:5432/DATABASE_NAME
+JWT_SECRET_KEY=your_secret_key
+CORS_ORIGINS=http://localhost:5173
+```
+
+Start the backend:
 
 ```bash
-uvicorn app.main:app --reload --port 8001
+uvicorn app.main:app --reload
 ```
 
 Backend:
 
 ```text
-http://localhost:8001
+http://localhost:8000
 ```
 
-Health check:
+Swagger API documentation:
 
 ```text
-http://localhost:8001/api/health
+http://localhost:8000/docs
 ```
 
-API documentation:
+### 3. Frontend Setup
 
-```text
-http://localhost:8001/docs
-```
-
----
-
-## 🧪 Testing
-
-The backend includes automated tests covering authentication, activities, dashboard calculations, trends, goals, what-if analysis, insights, carbon calculations, and API compatibility.
-
-Current backend validation:
-
-```text
-120 passed
-```
-
-Run the test suite with:
+Open another terminal:
 
 ```bash
-python -m pytest -q
+cd frontend
+npm install
+npm run dev
+```
+
+Frontend:
+
+```text
+http://localhost:5173
 ```
 
 ---
 
-## 🔌 API Overview
-
-### Authentication
-
-```text
-POST /api/auth/register
-POST /api/auth/login
-GET  /api/auth/me
-```
-
-### Activities
-
-```text
-GET    /api/activities
-POST   /api/activities
-DELETE /api/activities/{activity_id}
-```
-
-### Dashboard
-
-```text
-GET /api/dashboard
-```
-
-### Trends
-
-```text
-GET /api/trend
-```
-
-### Goals
-
-```text
-GET /api/goal
-PUT /api/goal
-```
-
-### What-If Analysis
-
-```text
-POST /api/what-if
-```
-
-### Insights
-
-```text
-GET /api/insights
-```
-
-### Health
-
-```text
-GET /api/health
-```
-
-Detailed API information is available in:
-
-```text
-backend/API.md
-```
-
----
-
-## 🧮 Carbon Calculation
-
-PlanetPulse uses a centralized carbon calculation engine.
-
-```text
-User Activity
-      ↓
-Activity Normalization
-      ↓
-Carbon Calculation Engine
-      ↓
-CO₂e Emission
-      ↓
-Database
-      ↓
-Dashboard / Trends / Insights / What-If
-```
-
-Keeping the calculation logic centralized helps maintain consistent emission calculations across different features.
-
----
-
-## 🔒 Security
-
-The backend includes:
-
-* Password hashing using a salted `scrypt` configuration
-* JWT authentication
-* Protected user-specific routes
-* User-scoped activity and goal data
-* Configurable token expiration
-* CORS configuration
-
-Sensitive credentials and secrets should be provided through environment variables and should not be committed to GitHub.
-
----
-
-## 📌 Current Development Status
+## 🔒 Environment Variables
 
 ### Backend
 
-* ✅ FastAPI backend
-* ✅ Database models
-* ✅ Authentication
-* ✅ Activity tracking
-* ✅ Carbon calculation engine
-* ✅ Dashboard API
-* ✅ Trend API
-* ✅ Monthly goals
-* ✅ What-If analysis
-* ✅ Rule-based insights
-* ✅ CORS configuration
-* ✅ API documentation
-* ✅ Automated testing
-* ✅ GitHub integration
+```env
+DATABASE_URL=
+JWT_SECRET_KEY=
+CORS_ORIGINS=
+```
 
 ### Frontend
 
-* 🚧 Frontend integration and end-to-end testing
+```env
+VITE_API_URL=
+```
+
+**Never commit `.env` files, database credentials, JWT secrets, or other sensitive configuration to the repository.**
 
 ---
 
-## 🎯 Project Objective
+## ☁️ Deployment
 
-PlanetPulse aims to make personal carbon tracking easier to understand by connecting everyday activities with measurable environmental impact.
+PlanetPulse uses a separated frontend/backend architecture:
 
-Instead of only showing an emission number, the platform combines:
+| Component         | Technology      | Deployment |
+| ----------------- | --------------- | ---------- |
+| Frontend          | React + Vite    | Vercel     |
+| Backend           | FastAPI         | Render     |
+| Database          | PostgreSQL      | Render     |
+| API Documentation | FastAPI Swagger | Render     |
 
-**Track → Analyze → Compare → Set Goals → Explore Alternatives**
-
-to help users understand how their daily choices affect their estimated carbon footprint.
+The frontend communicates with the deployed FastAPI backend through REST APIs, while the backend manages authentication, business logic, carbon calculations, and database operations.
 
 ---
 
-## 👨‍💻 Developer
+## 🎯 Project Objectives
+
+PlanetPulse was developed to:
+
+* Track carbon emissions from everyday activities
+* Provide a centralized view of personal environmental impact
+* Transform activity data into meaningful analytics
+* Help users monitor reduction goals
+* Provide what-if analysis for potential lifestyle changes
+* Demonstrate full-stack application development with a data-driven backend
+
+---
+
+## 🔮 Future Enhancements
+
+Potential future improvements include:
+
+* More detailed emission-factor datasets
+* Advanced personalization of recommendations
+* Additional activity categories
+* Improved comparative analytics
+* Exportable environmental impact reports
+* Extended visualization and reporting capabilities
+
+---
+
+## 👨‍💻 Author
 
 **Ayush Gupta**
-
-**Focus:** Data Analytics, Python, SQL, Power BI & Software Development
-
----
-
-## 📄 License
-
-This project is developed for educational and portfolio purposes.
+B.Tech — Computer Science & Engineering
+NITRA Technical Campus, Ghaziabad
