@@ -346,5 +346,4 @@ Potential future improvements include:
 ## 👨‍💻 Author
 
 **Ayush Gupta**
-B.Tech — Computer Science & Engineering
-NITRA Technical Campus, Ghaziabad
+
