@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends
 from controllers.common import database_error
 from controllers.dashboard import monthly_goal, monthly_totals, progress
 from controllers.common import get_current_user
-from database import get_connection
+from database import get_connection, get_cursor
 
 router = APIRouter()
 
@@ -43,7 +43,7 @@ def get_insights(user=Depends(get_current_user)):
     connection = cursor = None
     try:
         connection = get_connection()
-        cursor = connection.cursor(dictionary=True)
+        cursor = get_cursor(connection, dictionary=True)
         totals = monthly_totals(cursor, user["id"])
         categories = {
             "travel": float(totals["travel_co2e"] or 0),
@@ -58,14 +58,14 @@ def get_insights(user=Depends(get_current_user)):
         goal_progress = progress(total, goal_target)
 
         cursor.execute(
-            """SELECT COALESCE(SUM(CASE WHEN a.activity_date >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+              """SELECT COALESCE(SUM(CASE WHEN a.activity_date >= CURRENT_DATE - INTERVAL '6 days'
                                                THEN c.co2e ELSE 0 END), 0) AS recent_total,
-                      COALESCE(SUM(CASE WHEN a.activity_date < DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+                      COALESCE(SUM(CASE WHEN a.activity_date < CURRENT_DATE - INTERVAL '6 days'
                                                THEN c.co2e ELSE 0 END), 0) AS previous_total
                FROM activities a JOIN carbon_records c ON c.activity_id = a.id
                WHERE a.user_id = %s
-                 AND a.activity_date >= DATE_SUB(CURDATE(), INTERVAL 13 DAY)
-                 AND a.activity_date < DATE_ADD(CURDATE(), INTERVAL 1 DAY)""",
+                  AND a.activity_date >= CURRENT_DATE - INTERVAL '13 days'
+                  AND a.activity_date < CURRENT_DATE + INTERVAL '1 day'""",
             (user["id"],),
         )
         trend_row = cursor.fetchone()
@@ -77,15 +77,15 @@ def get_insights(user=Depends(get_current_user)):
             """SELECT COALESCE(SUM(c.co2e), 0) AS previous_month_total
                FROM activities a JOIN carbon_records c ON c.activity_id = a.id
                WHERE a.user_id = %s
-                 AND a.activity_date >= DATE_SUB(DATE_SUB(CURDATE(), INTERVAL (DAYOFMONTH(CURDATE()) - 1) DAY), INTERVAL 1 MONTH)
-                 AND a.activity_date < DATE_SUB(CURDATE(), INTERVAL (DAYOFMONTH(CURDATE()) - 1) DAY)""",
+                 AND a.activity_date >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '1 month'
+                 AND a.activity_date < DATE_TRUNC('month', CURRENT_DATE)""",
             (user["id"],),
         )
         previous_month_total = float(cursor.fetchone()["previous_month_total"] or 0)
         reduction = round((previous_month_total - total) / previous_month_total * 100, 1) if previous_month_total > 0 else None
 
         cursor.execute(
-            """SELECT a.category, a.activity_type, CAST(a.activity_date AS CHAR) AS activity_date,
+            """SELECT a.category, a.activity_type, a.activity_date::text AS activity_date,
                       ROUND(c.co2e, 3) AS co2e
                FROM activities a JOIN carbon_records c ON c.activity_id = a.id
                WHERE a.user_id = %s ORDER BY a.activity_date DESC, a.id DESC LIMIT 5""",

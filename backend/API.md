@@ -4,7 +4,7 @@ Base URL for local development: `http://127.0.0.1:8001`. Every endpoint below is
 
 ## Start locally
 
-From the `backend` directory, install `requirements.txt`, copy `.env.example` to `.env`, set the MySQL password, and replace `JWT_SECRET_KEY` with at least 32 random bytes. For a fresh database, run `schema.sql`; to preserve an existing activity database, run `python migrate_auth.py` once. Start with `uvicorn main:app --reload --port 8001`. Swagger docs are available at `/docs`.
+From the `backend` directory, install `requirements.txt`, copy `.env.example` to `.env`, set the PostgreSQL `DATABASE_URL`, and replace `JWT_SECRET_KEY` with at least 32 random bytes. The backend creates the required tables on startup; `schema.sql` can also be applied manually. Start with `uvicorn main:app --reload --port 8001`. Swagger docs are available at `/docs`.
 
 ## Authentication
 

@@ -2,7 +2,7 @@ from datetime import date, timedelta
 
 from fastapi import APIRouter, Depends, Query
 
-from database import get_connection
+from database import get_connection, get_cursor
 from controllers.common import database_error, get_current_user
 
 router = APIRouter()
@@ -14,12 +14,12 @@ def get_trend(period: str = Query("7d", pattern="^(7d|30d|3m)$"), user=Depends(g
     connection = cursor = None
     try:
         connection = get_connection()
-        cursor = connection.cursor(dictionary=True)
+        cursor = get_cursor(connection, dictionary=True)
         cursor.execute(
-            """SELECT CAST(a.activity_date AS CHAR) AS date,
+                """SELECT a.activity_date::text AS date,
                       ROUND(SUM(c.co2e), 3) AS co2e
                FROM activities a JOIN carbon_records c ON c.activity_id = a.id
-               WHERE a.user_id = %s AND a.activity_date >= DATE_SUB(CURDATE(), INTERVAL %s DAY)
+                    WHERE a.user_id = %s AND a.activity_date >= CURRENT_DATE - (%s * INTERVAL '1 day')
                GROUP BY a.activity_date ORDER BY a.activity_date""",
             (user["id"], days - 1),
         )

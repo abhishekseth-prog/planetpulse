@@ -1,11 +1,13 @@
 """PlanetPulse API application entry point."""
 
 import os
+import logging
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from routes.api import router as api_router
+from database import initialize_schema
 
 app = FastAPI(
     title="PlanetPulse API",
@@ -28,6 +30,14 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],
 )
+
+
+@app.on_event("startup")
+def prepare_database():
+    try:
+        initialize_schema()
+    except Exception:
+        logging.getLogger(__name__).exception("PlanetPulse database initialization failed")
 
 
 @app.get("/")

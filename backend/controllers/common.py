@@ -8,7 +8,7 @@ import time
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from database import get_connection
+from database import get_connection, get_cursor
 
 bearer = HTTPBearer(auto_error=False)
 
@@ -55,7 +55,7 @@ def get_current_user(credentials: HTTPAuthorizationCredentials | None = Depends(
     connection = cursor = None
     try:
         connection = get_connection()
-        cursor = connection.cursor(dictionary=True)
+        cursor = get_cursor(connection, dictionary=True)
         cursor.execute("SELECT id, name, email FROM users WHERE id = %s", (user_id,))
         user = cursor.fetchone()
         if not user:

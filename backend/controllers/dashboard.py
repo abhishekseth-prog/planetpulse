@@ -2,7 +2,7 @@ from datetime import date, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from database import get_connection
+from database import get_connection, get_cursor
 from controllers.common import database_error, get_current_user
 
 router = APIRouter()
@@ -13,14 +13,15 @@ def monthly_goal(connection, cursor, user_id, target=None):
         user_id INT NOT NULL,
         goal_month CHAR(7) NOT NULL,
         target_kg DECIMAL(12,3) NOT NULL DEFAULT 100,
-        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (user_id, goal_month)
-    ) ENGINE=InnoDB""")
+    )""")
     month = date.today().strftime("%Y-%m")
     if target is not None:
         cursor.execute(
-            """INSERT INTO user_goals (user_id, goal_month, target_kg) VALUES (%s, %s, %s)
-               ON DUPLICATE KEY UPDATE target_kg = VALUES(target_kg)""",
+                """INSERT INTO user_goals (user_id, goal_month, target_kg) VALUES (%s, %s, %s)
+                    ON CONFLICT (user_id, goal_month) DO UPDATE SET target_kg = EXCLUDED.target_kg,
+                    updated_at = CURRENT_TIMESTAMP""",
             (user_id, month, target),
         )
     cursor.execute("SELECT target_kg FROM user_goals WHERE user_id = %s AND goal_month = %s", (user_id, month))
@@ -36,8 +37,8 @@ def monthly_totals(cursor, user_id):
                   COALESCE(SUM(CASE WHEN a.category='food' THEN c.co2e ELSE 0 END), 0) AS food_co2e
            FROM activities a JOIN carbon_records c ON c.activity_id = a.id
            WHERE a.user_id = %s
-             AND a.activity_date >= DATE_SUB(CURDATE(), INTERVAL (DAYOFMONTH(CURDATE()) - 1) DAY)
-             AND a.activity_date < DATE_ADD(LAST_DAY(CURDATE()), INTERVAL 1 DAY)""",
+             AND a.activity_date >= DATE_TRUNC('month', CURRENT_DATE)::date
+             AND a.activity_date < (DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month')::date""",
         (user_id,),
     )
     return cursor.fetchone()
@@ -59,7 +60,7 @@ def get_dashboard(user=Depends(get_current_user)):
     connection = cursor = None
     try:
         connection = get_connection()
-        cursor = connection.cursor(dictionary=True)
+        cursor = get_cursor(connection, dictionary=True)
         goal = monthly_goal(connection, cursor, user["id"])
         row = monthly_totals(cursor, user["id"])
         target = float(goal)
@@ -116,7 +117,7 @@ def get_goal(user=Depends(get_current_user)):
     connection = cursor = None
     try:
         connection = get_connection()
-        cursor = connection.cursor(dictionary=True)
+        cursor = get_cursor(connection, dictionary=True)
         target = monthly_goal(connection, cursor, user["id"])
         row = monthly_totals(cursor, user["id"])
         return progress(float(row["total_co2e"] or 0), target)
@@ -141,7 +142,7 @@ def update_goal(payload: dict, user=Depends(get_current_user)):
     connection = cursor = None
     try:
         connection = get_connection()
-        cursor = connection.cursor(dictionary=True)
+        cursor = get_cursor(connection, dictionary=True)
         monthly_goal(connection, cursor, user["id"], target)
         row = monthly_totals(cursor, user["id"])
         connection.commit()

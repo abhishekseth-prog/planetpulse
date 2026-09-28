@@ -6,7 +6,7 @@ import secrets
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
-from database import get_connection
+from database import get_connection, get_cursor
 from controllers.common import database_error, get_current_user, issue_token
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
@@ -60,12 +60,15 @@ def register(payload: RegisterRequest):
     connection = cursor = None
     try:
         connection = get_connection()
-        cursor = connection.cursor(dictionary=True)
+        cursor = get_cursor(connection, dictionary=True)
         cursor.execute("SELECT id FROM users WHERE email = %s", (email,))
         if cursor.fetchone():
             raise HTTPException(status_code=409, detail="An account with this email already exists")
-        cursor.execute("INSERT INTO users (name, email, password_hash) VALUES (%s, %s, %s)", (name, email, hash_password(payload.password)))
-        user_id = cursor.lastrowid
+        cursor.execute(
+            "INSERT INTO users (name, email, password_hash) VALUES (%s, %s, %s) RETURNING id",
+            (name, email, hash_password(payload.password)),
+        )
+        user_id = cursor.fetchone()["id"]
         connection.commit()
         user = {"id": int(user_id), "name": name, "email": email}
         return {"access_token": issue_token(user_id), "token_type": "bearer", "user": user}
@@ -93,7 +96,7 @@ def login(payload: LoginRequest):
     connection = cursor = None
     try:
         connection = get_connection()
-        cursor = connection.cursor(dictionary=True)
+        cursor = get_cursor(connection, dictionary=True)
         cursor.execute("SELECT id, name, email, password_hash FROM users WHERE email = %s", (email,))
         row = cursor.fetchone()
         if not row or not check_password(payload.password, row["password_hash"]):

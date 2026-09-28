@@ -3,7 +3,7 @@ from datetime import date as Date
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, root_validator
 
-from database import get_connection
+from database import get_connection, get_cursor
 from services.calculator import calculate_carbon
 from controllers.common import database_error, get_current_user
 
@@ -42,14 +42,14 @@ def add_activity(request: ActivityRequest, user=Depends(get_current_user)):
     connection = cursor = None
     try:
         connection = get_connection()
-        cursor = connection.cursor()
+        cursor = get_cursor(connection)
         cursor.execute(
             """INSERT INTO activities
                (user_id, category, activity_type, value, unit, activity_date)
-               VALUES (%s, %s, %s, %s, %s, %s)""",
+               VALUES (%s, %s, %s, %s, %s, %s) RETURNING id""",
             (user["id"], category, activity, request.amount if request.amount is not None else request.value, request.unit, activity_date),
         )
-        activity_id = cursor.lastrowid
+        activity_id = cursor.fetchone()[0]
         cursor.execute("INSERT INTO carbon_records (activity_id, co2e) VALUES (%s, %s)", (activity_id, co2e))
         connection.commit()
         return {
@@ -75,7 +75,7 @@ def get_activities(user=Depends(get_current_user)):
     connection = cursor = None
     try:
         connection = get_connection()
-        cursor = connection.cursor(dictionary=True)
+        cursor = get_cursor(connection, dictionary=True)
         cursor.execute(
             """SELECT a.id, a.category, a.activity_type, a.value, a.unit,
                       a.activity_date, c.co2e
